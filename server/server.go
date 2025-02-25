@@ -10,6 +10,7 @@ import (
 
 	spb "github.com/BetterGR/students-microservice/protos"
 	ms "github.com/TekClinic/MicroService-Lib"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,7 +20,6 @@ import (
 const (
 	// define address.
 	connectionProtocol = "tcp"
-
 	// Debugging logs.
 	logLevelDebug = 5
 )
@@ -27,18 +27,26 @@ const (
 // StudentsServer is an implementation of GRPC Students microservice.
 type StudentsServer struct {
 	ms.BaseServiceServer
+	db *Database
 	// throws unimplemented error
 	spb.UnimplementedStudentsServiceServer
 }
 
+// initStudentsMicroserviceServer initializes the StudentsServer.
 func initStudentsMicroserviceServer() (*StudentsServer, error) {
 	base, err := ms.CreateBaseServiceServer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base service: %w", err)
 	}
 
+	database, err := InitializeDatabase()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize database: %w", err)
+	}
+
 	return &StudentsServer{
 		BaseServiceServer:                  base,
+		db:                                 database,
 		UnimplementedStudentsServiceServer: spb.UnimplementedStudentsServiceServer{},
 	}, nil
 }
@@ -47,8 +55,7 @@ func initStudentsMicroserviceServer() (*StudentsServer, error) {
 func (s *StudentsServer) GetStudent(ctx context.Context,
 	req *spb.GetStudentRequest,
 ) (*spb.GetStudentResponse, error) {
-	_, err := s.VerifyToken(ctx, req.GetToken())
-	if err != nil {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
@@ -56,16 +63,9 @@ func (s *StudentsServer) GetStudent(ctx context.Context,
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received GetStudent request", "studentId", req.GetId())
 
-	courses := []*spb.Course{
-		{Id: "C1", Name: "Mathematics", Semester: "S24"},
-		{Id: "C2", Name: "Physics", Semester: "S24"},
-	}
-
-	student := &spb.Student{
-		FirstName:  "Rick",
-		SecondName: "Roll",
-		Id:         req.GetId(),
-		Courses:    courses,
+	student, err := s.db.GetStudent(ctx, req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "student not found: %v", err)
 	}
 
 	return &spb.GetStudentResponse{
@@ -77,8 +77,7 @@ func (s *StudentsServer) GetStudent(ctx context.Context,
 func (s *StudentsServer) CreateStudent(ctx context.Context,
 	req *spb.CreateStudentRequest,
 ) (*spb.CreateStudentResponse, error) {
-	_, err := s.VerifyToken(ctx, req.GetToken())
-	if err != nil {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
@@ -87,6 +86,10 @@ func (s *StudentsServer) CreateStudent(ctx context.Context,
 	logger.V(logLevelDebug).Info("Received CreateStudent request",
 		"firstName", req.GetStudent().GetFirstName(), "secondName", req.GetStudent().GetSecondName())
 
+	if err := s.db.AddStudent(ctx, req.GetStudent()); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create student: %v", err)
+	}
+
 	return &spb.CreateStudentResponse{Student: req.GetStudent()}, nil
 }
 
@@ -94,8 +97,7 @@ func (s *StudentsServer) CreateStudent(ctx context.Context,
 func (s *StudentsServer) UpdateStudent(ctx context.Context,
 	req *spb.UpdateStudentRequest,
 ) (*spb.UpdateStudentResponse, error) {
-	_, err := s.VerifyToken(ctx, req.GetToken())
-	if err != nil {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
@@ -104,6 +106,10 @@ func (s *StudentsServer) UpdateStudent(ctx context.Context,
 	logger.V(logLevelDebug).Info("Received UpdateStudent request",
 		"firstName", req.GetStudent().GetFirstName(), "secondName", req.GetStudent().GetSecondName())
 
+	if err := s.db.UpdateStudent(ctx, req.GetStudent()); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update student: %v", err)
+	}
+
 	return &spb.UpdateStudentResponse{Student: req.GetStudent()}, nil
 }
 
@@ -111,8 +117,7 @@ func (s *StudentsServer) UpdateStudent(ctx context.Context,
 func (s *StudentsServer) GetStudentCourses(ctx context.Context,
 	req *spb.GetStudentCoursesRequest,
 ) (*spb.GetStudentCoursesResponse, error) {
-	_, err := s.VerifyToken(ctx, req.GetToken())
-	if err != nil {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
@@ -122,20 +127,9 @@ func (s *StudentsServer) GetStudentCourses(ctx context.Context,
 		"ID", req.GetId(),
 		"semester", req.GetSemester())
 
-	if req.GetId() == "123456789" {
-		courses1 := []*spb.Course{
-			{Id: "C1", Name: "Mathematics", Semester: "S24"},
-			{Id: "C2", Name: "Physics", Semester: "S24"},
-		}
-
-		return &spb.GetStudentCoursesResponse{
-			Courses: courses1,
-		}, nil
-	}
-
-	courses := []*spb.Course{
-		{Id: "C3", Name: "Project", Semester: "S24"},
-		{Id: "C4", Name: "Physics II", Semester: "S24"},
+	courses, err := s.db.GetStudentCourses(ctx, req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "courses not found: %v", err)
 	}
 
 	return &spb.GetStudentCoursesResponse{
@@ -143,44 +137,21 @@ func (s *StudentsServer) GetStudentCourses(ctx context.Context,
 	}, nil
 }
 
-// GetStudentGrades searches the course that corresponds to the given course_id in the given semester
-// and returns the students grades in this course.
-func (s *StudentsServer) GetStudentGrades(ctx context.Context,
-	req *spb.GetStudentGradesRequest,
-) (*spb.GetStudentGradesResponse, error) {
-	_, err := s.VerifyToken(ctx, req.GetToken())
-	if err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
-	}
-
-	logger := klog.FromContext(ctx)
-	logger.V(logLevelDebug).Info("Received GetStudentGrades request",
-		"firstName", req.GetId(),
-		"courseId", req.GetCourseId(), "semester", req.GetSemester())
-
-	grades := []*spb.Grade{
-		{Semester: "S24", CourseId: "C1", Grade: "100"},
-		{Semester: "S24", CourseId: "C2", Grade: "98"},
-	}
-
-	return &spb.GetStudentGradesResponse{
-		Grades: grades,
-	}, nil
-}
-
 // DeleteStudent deletes the Student from the system.
 func (s *StudentsServer) DeleteStudent(ctx context.Context,
 	req *spb.DeleteStudentRequest,
 ) (*spb.DeleteStudentResponse, error) {
-	_, err := s.VerifyToken(ctx, req.GetToken())
-	if err != nil {
+	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received DeleteStudent request", "studentId", req.GetStudent().GetId())
+
+	if err := s.db.DeleteStudent(ctx, req.GetStudent().GetId()); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete student: %v", err)
+	}
 
 	logger.Info("Deleted", "studentId", req.GetStudent().GetId())
 
@@ -193,25 +164,32 @@ func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
 
+	err := godotenv.Load()
+	if err != nil {
+		klog.Fatalf("Error loading .env file")
+	}
+
 	// init the StudentsServer
 	server, err := initStudentsMicroserviceServer()
 	if err != nil {
-		klog.Error("Failed to init StudentsServer", err)
+		klog.Fatalf("Failed to init StudentsServer: %v", err)
 	}
 
 	// create a listener on port 'address'
-	lis, err := net.Listen(connectionProtocol, os.Getenv("STUDENTS_PORT"))
+	address := os.Getenv("GRPC_PORT")
+
+	lis, err := net.Listen(connectionProtocol, address)
 	if err != nil {
-		klog.Error("Failed to listen:", err)
+		klog.Fatalf("Failed to listen: %v", err)
 	}
 
-	klog.Info("Starting StudentsServer on port: ", os.Getenv("STUDENTS_PORT"))
+	klog.Info("Starting StudentsServer on port: ", address)
 	// create a grpc StudentsServer
 	grpcServer := grpc.NewServer()
 	spb.RegisterStudentsServiceServer(grpcServer, server)
 
 	// serve the grpc StudentsServer
 	if err := grpcServer.Serve(lis); err != nil {
-		klog.Error("Failed to serve:", err)
+		klog.Fatalf("Failed to serve: %v", err)
 	}
 }
