@@ -13,8 +13,6 @@ service StudentsService {
     rpc UpdateStudent (UpdateStudentRequest) returns (UpdateStudentResponse);
     // Get a student's courses in a given semester.
     rpc GetStudentCourses (GetStudentCoursesRequest) returns (GetStudentCoursesResponse);
-    // Get a student's grades in a given course and semester.
-    rpc GetStudentGrades (GetStudentGradesRequest) returns (GetStudentGradesResponse);
     // Delete a student.
     rpc DeleteStudent (DeleteStudentRequest) returns (DeleteStudentResponse);
 }
@@ -61,20 +59,7 @@ message GetStudentCoursesRequest {
 
 // Response message containing a list of courses a student is enrolled in, in a given semester.
 message GetStudentCoursesResponse {
-    repeated Course courses = 1;
-}
-
-// Request message for fetching the list of grades a student has received.
-message GetStudentGradesRequest {
-    string token = 1;
-    string id = 2;
-    string semester = 3;
-    string courseId = 4;
-}
-
-// Response message containing a list of grades for the student, in a given course and semester.
-message GetStudentGradesResponse {
-    repeated Grade grades = 1;
+    repeated string courses = 1;
 }
 
 // Request message for deleting a student from the system.
@@ -83,29 +68,16 @@ message DeleteStudentRequest {
     Student student = 2;
 }
 
-// Response message after deleting a student (no data is returned).
+// Response message after deleting a student.
 message DeleteStudentResponse {
 }
 
-// Message representing a student with personal details.
+// Message representing a student.
 message Student {
     string firstName = 1;
     string secondName = 2;
     string id = 3;
-    repeated Course courses = 4;
-}
-
-// Message representing a course.
-message Course {
-    string id = 1;
-    string name = 2;
-    string semester = 3;
-    repeated Grade grades = 4;
-}
-
-// Message representing a student's grade for a particular course and semester.
-message Grade {
-    string semester = 1;
-    string courseId = 2;
-    string grade = 3;
+    string email = 4;
+    string phoneNumber = 5;
+    repeated string courses = 6;
 }

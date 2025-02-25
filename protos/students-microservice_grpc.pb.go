@@ -23,7 +23,6 @@ const (
 	StudentsService_CreateStudent_FullMethodName     = "/students.StudentsService/CreateStudent"
 	StudentsService_UpdateStudent_FullMethodName     = "/students.StudentsService/UpdateStudent"
 	StudentsService_GetStudentCourses_FullMethodName = "/students.StudentsService/GetStudentCourses"
-	StudentsService_GetStudentGrades_FullMethodName  = "/students.StudentsService/GetStudentGrades"
 	StudentsService_DeleteStudent_FullMethodName     = "/students.StudentsService/DeleteStudent"
 )
 
@@ -39,8 +38,6 @@ type StudentsServiceClient interface {
 	UpdateStudent(ctx context.Context, in *UpdateStudentRequest, opts ...grpc.CallOption) (*UpdateStudentResponse, error)
 	// Get a student's courses in a given semester.
 	GetStudentCourses(ctx context.Context, in *GetStudentCoursesRequest, opts ...grpc.CallOption) (*GetStudentCoursesResponse, error)
-	// Get a student's grades in a given course and semester.
-	GetStudentGrades(ctx context.Context, in *GetStudentGradesRequest, opts ...grpc.CallOption) (*GetStudentGradesResponse, error)
 	// Delete a student.
 	DeleteStudent(ctx context.Context, in *DeleteStudentRequest, opts ...grpc.CallOption) (*DeleteStudentResponse, error)
 }
@@ -93,16 +90,6 @@ func (c *studentsServiceClient) GetStudentCourses(ctx context.Context, in *GetSt
 	return out, nil
 }
 
-func (c *studentsServiceClient) GetStudentGrades(ctx context.Context, in *GetStudentGradesRequest, opts ...grpc.CallOption) (*GetStudentGradesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetStudentGradesResponse)
-	err := c.cc.Invoke(ctx, StudentsService_GetStudentGrades_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *studentsServiceClient) DeleteStudent(ctx context.Context, in *DeleteStudentRequest, opts ...grpc.CallOption) (*DeleteStudentResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteStudentResponse)
@@ -125,8 +112,6 @@ type StudentsServiceServer interface {
 	UpdateStudent(context.Context, *UpdateStudentRequest) (*UpdateStudentResponse, error)
 	// Get a student's courses in a given semester.
 	GetStudentCourses(context.Context, *GetStudentCoursesRequest) (*GetStudentCoursesResponse, error)
-	// Get a student's grades in a given course and semester.
-	GetStudentGrades(context.Context, *GetStudentGradesRequest) (*GetStudentGradesResponse, error)
 	// Delete a student.
 	DeleteStudent(context.Context, *DeleteStudentRequest) (*DeleteStudentResponse, error)
 	mustEmbedUnimplementedStudentsServiceServer()
@@ -150,9 +135,6 @@ func (UnimplementedStudentsServiceServer) UpdateStudent(context.Context, *Update
 }
 func (UnimplementedStudentsServiceServer) GetStudentCourses(context.Context, *GetStudentCoursesRequest) (*GetStudentCoursesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStudentCourses not implemented")
-}
-func (UnimplementedStudentsServiceServer) GetStudentGrades(context.Context, *GetStudentGradesRequest) (*GetStudentGradesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetStudentGrades not implemented")
 }
 func (UnimplementedStudentsServiceServer) DeleteStudent(context.Context, *DeleteStudentRequest) (*DeleteStudentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteStudent not implemented")
@@ -250,24 +232,6 @@ func _StudentsService_GetStudentCourses_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StudentsService_GetStudentGrades_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetStudentGradesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StudentsServiceServer).GetStudentGrades(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StudentsService_GetStudentGrades_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StudentsServiceServer).GetStudentGrades(ctx, req.(*GetStudentGradesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _StudentsService_DeleteStudent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteStudentRequest)
 	if err := dec(in); err != nil {
@@ -308,10 +272,6 @@ var StudentsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetStudentCourses",
 			Handler:    _StudentsService_GetStudentCourses_Handler,
-		},
-		{
-			MethodName: "GetStudentGrades",
-			Handler:    _StudentsService_GetStudentGrades_Handler,
 		},
 		{
 			MethodName: "DeleteStudent",
