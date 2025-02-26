@@ -61,9 +61,9 @@ func (s *StudentsServer) GetStudent(ctx context.Context,
 	}
 
 	logger := klog.FromContext(ctx)
-	logger.V(logLevelDebug).Info("Received GetStudent request", "studentId", req.GetId())
+	logger.V(logLevelDebug).Info("Received GetStudent request", "studentId", req.GetStudentID())
 
-	student, err := s.db.GetStudent(ctx, req.GetId())
+	student, err := s.db.GetStudent(ctx, req.GetStudentID())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "student not found: %v", err)
 	}
@@ -113,30 +113,6 @@ func (s *StudentsServer) UpdateStudent(ctx context.Context,
 	return &spb.UpdateStudentResponse{Student: req.GetStudent()}, nil
 }
 
-// GetStudentCourses searches the courses that the Student is enrolled in during the given semester and returns them.
-func (s *StudentsServer) GetStudentCourses(ctx context.Context,
-	req *spb.GetStudentCoursesRequest,
-) (*spb.GetStudentCoursesResponse, error) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
-	}
-
-	logger := klog.FromContext(ctx)
-	logger.Info("Received GetStudentCourses request",
-		"ID", req.GetId(),
-		"semester", req.GetSemester())
-
-	courses, err := s.db.GetStudentCourses(ctx, req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "courses not found: %v", err)
-	}
-
-	return &spb.GetStudentCoursesResponse{
-		Courses: courses,
-	}, nil
-}
-
 // DeleteStudent deletes the Student from the system.
 func (s *StudentsServer) DeleteStudent(ctx context.Context,
 	req *spb.DeleteStudentRequest,
@@ -147,13 +123,13 @@ func (s *StudentsServer) DeleteStudent(ctx context.Context,
 	}
 
 	logger := klog.FromContext(ctx)
-	logger.V(logLevelDebug).Info("Received DeleteStudent request", "studentId", req.GetStudent().GetId())
+	logger.V(logLevelDebug).Info("Received DeleteStudent request", "studentId", req.GetStudent().GetStudentID())
 
-	if err := s.db.DeleteStudent(ctx, req.GetStudent().GetId()); err != nil {
+	if err := s.db.DeleteStudent(ctx, req.GetStudent().GetStudentID()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete student: %v", err)
 	}
 
-	logger.Info("Deleted", "studentId", req.GetStudent().GetId())
+	logger.Info("Deleted", "studentId", req.GetStudent().GetStudentID())
 
 	return &spb.DeleteStudentResponse{}, nil
 }
