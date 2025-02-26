@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	spb "github.com/BetterGR/students-microservice/protos"
 	"github.com/uptrace/bun"
@@ -101,24 +102,23 @@ func (d *Database) createSchemaIfNotExists(ctx context.Context) error {
 
 // Student represents the database schema for students.
 type Student struct {
-	UniqueID    string   `bun:",pk,default:gen_random_uuid()"`
-	ID          string   `bun:"id,unique,notnull"`
-	FirstName   string   `bun:"first_name,notnull"`
-	LastName    string   `bun:"last_name,notnull"`
-	Email       string   `bun:"email,unique,notnull"`
-	PhoneNumber string   `bun:"phone_number,unique,notnull"`
-	Courses     []string `bun:",array"`
+	StudentID   string    `bun:"student_id,unique,notnull"`
+	FirstName   string    `bun:"first_name,notnull"`
+	LastName    string    `bun:"last_name,notnull"`
+	Email       string    `bun:"email,unique,notnull"`
+	PhoneNumber string    `bun:"phone_number,unique,notnull"`
+	CreatedAt   time.Time `bun:"created_at,default:current_timestamp"`
+	UpdatedAt   time.Time `bun:"updated_at,default:current_timestamp"`
 }
 
 // AddStudent adds a new student to the database.
 func (d *Database) AddStudent(ctx context.Context, student *spb.Student) error {
 	_, err := d.db.NewInsert().Model(&Student{
-		ID:          student.GetId(),
+		StudentID:   student.GetStudentID(),
 		FirstName:   student.GetFirstName(),
 		LastName:    student.GetSecondName(),
 		Email:       student.GetEmail(),
 		PhoneNumber: student.GetPhoneNumber(),
-		Courses:     student.GetCourses(),
 	}).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to add student: %w", err)
@@ -131,30 +131,28 @@ func (d *Database) AddStudent(ctx context.Context, student *spb.Student) error {
 func (d *Database) GetStudent(ctx context.Context, id string) (*spb.Student, error) {
 	student := new(Student)
 
-	if err := d.db.NewSelect().Model(student).Where("id = ?", id).Scan(ctx); err != nil {
+	if err := d.db.NewSelect().Model(student).Where("student_id = ?", id).Scan(ctx); err != nil {
 		return nil, fmt.Errorf("failed to get student: %w", err)
 	}
 
 	return &spb.Student{
-		Id:          student.ID,
+		StudentID:   student.StudentID,
 		FirstName:   student.FirstName,
 		SecondName:  student.LastName,
 		Email:       student.Email,
 		PhoneNumber: student.PhoneNumber,
-		Courses:     student.Courses,
 	}, nil
 }
 
 // UpdateStudent updates an existing student in the database.
 func (d *Database) UpdateStudent(ctx context.Context, student *spb.Student) error {
 	_, err := d.db.NewUpdate().Model(&Student{
-		ID:          student.GetId(),
+		StudentID:   student.GetStudentID(),
 		FirstName:   student.GetFirstName(),
 		LastName:    student.GetSecondName(),
 		Email:       student.GetEmail(),
 		PhoneNumber: student.GetPhoneNumber(),
-		Courses:     student.GetCourses(),
-	}).Where("id = ?", student.GetId()).Exec(ctx)
+	}).Where("student_id = ?", student.GetStudentID()).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to update student: %w", err)
 	}
@@ -164,21 +162,10 @@ func (d *Database) UpdateStudent(ctx context.Context, student *spb.Student) erro
 
 // DeleteStudent removes a student from the database.
 func (d *Database) DeleteStudent(ctx context.Context, id string) error {
-	_, err := d.db.NewDelete().Model((*Student)(nil)).Where("id = ?", id).Exec(ctx)
+	_, err := d.db.NewDelete().Model((*Student)(nil)).Where("student_id = ?", id).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete student: %w", err)
 	}
 
 	return nil
-}
-
-// GetStudentCourses retrieves the courses of a student by ID.
-func (d *Database) GetStudentCourses(ctx context.Context, id string) ([]string, error) {
-	student := new(Student)
-
-	if err := d.db.NewSelect().Model(student).Where("id = ?", id).Scan(ctx); err != nil {
-		return nil, fmt.Errorf("failed to get student courses: %w", err)
-	}
-
-	return student.Courses, nil
 }
