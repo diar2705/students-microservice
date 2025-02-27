@@ -104,7 +104,7 @@ func (s *StudentsServer) CreateStudent(ctx context.Context,
 		return nil, status.Errorf(codes.Internal, "failed to create student: %v", err)
 	}
 
-	return &spb.CreateStudentResponse{Student: req.GetStudent()}, nil
+	return &spb.CreateStudentResponse{}, nil
 }
 
 // UpdateStudent updates the given Student and returns them after the update.
@@ -124,7 +124,7 @@ func (s *StudentsServer) UpdateStudent(ctx context.Context,
 		return nil, status.Errorf(codes.Internal, "failed to update student: %v", err)
 	}
 
-	return &spb.UpdateStudentResponse{Student: req.GetStudent()}, nil
+	return &spb.UpdateStudentResponse{}, nil
 }
 
 // DeleteStudent deletes the Student from the system.

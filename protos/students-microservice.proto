@@ -34,7 +34,6 @@ message CreateStudentRequest {
 
 // Response message for the result of creating a new student.
 message CreateStudentResponse {
-    Student student = 1;
 }
 
 // Request message for updating an existing student.
@@ -45,7 +44,6 @@ message UpdateStudentRequest {
 
 // Response message containing the updated student details.
 message UpdateStudentResponse {
-    Student student = 1;
 }
 
 // Request message for deleting a student from the system.
