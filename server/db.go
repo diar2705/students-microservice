@@ -20,6 +20,12 @@ type Database struct {
 	db *bun.DB
 }
 
+var (
+	ErrStudentNil      = errors.New("student is nil")
+	ErrStudentIDEmpty  = errors.New("student ID is empty")
+	ErrStudentNotFound = errors.New("student not found")
+)
+
 // InitializeDatabase ensures that the database exists and initializes the schema.
 func InitializeDatabase() (*Database, error) {
 	createDatabaseIfNotExists()
@@ -60,9 +66,9 @@ func createDatabaseIfNotExists() {
 			klog.Fatalf("Failed to create database: %v", err)
 		}
 
-		klog.Infof("Database %s created successfully.", dbName)
+		klog.V(logLevelDebug).Infof("Database %s created successfully.", dbName)
 	} else {
-		klog.Infof("Database %s already exists.", dbName)
+		klog.V(logLevelDebug).Infof("Database %s already exists.", dbName)
 	}
 }
 
@@ -78,7 +84,7 @@ func ConnectDB() (*Database, error) {
 		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
 
-	klog.Info("Connected to PostgreSQL database.")
+	klog.V(logLevelDebug).Info("Connected to PostgreSQL database.")
 
 	return &Database{db: database}, nil
 }
@@ -95,14 +101,14 @@ func (d *Database) createSchemaIfNotExists(ctx context.Context) error {
 		}
 	}
 
-	klog.Info("Database schema initialized.")
+	klog.V(logLevelDebug).Info("Database schema initialized.")
 
 	return nil
 }
 
 // Student represents the database schema for students.
 type Student struct {
-	StudentID   string    `bun:"student_id,unique,notnull"`
+	StudentID   string    `bun:"student_id,unique,pk,notnull"`
 	FirstName   string    `bun:"first_name,notnull"`
 	LastName    string    `bun:"last_name,notnull"`
 	Email       string    `bun:"email,unique,notnull"`
@@ -113,6 +119,10 @@ type Student struct {
 
 // AddStudent adds a new student to the database.
 func (d *Database) AddStudent(ctx context.Context, student *spb.Student) error {
+	if student == nil {
+		return fmt.Errorf("%w", ErrStudentNil)
+	}
+
 	_, err := d.db.NewInsert().Model(&Student{
 		StudentID:   student.GetStudentID(),
 		FirstName:   student.GetFirstName(),
@@ -128,10 +138,13 @@ func (d *Database) AddStudent(ctx context.Context, student *spb.Student) error {
 }
 
 // GetStudent retrieves a student by ID from the database.
-func (d *Database) GetStudent(ctx context.Context, id string) (*spb.Student, error) {
-	student := new(Student)
+func (d *Database) GetStudent(ctx context.Context, studentID string) (*spb.Student, error) {
+	if studentID == "" {
+		return nil, fmt.Errorf("%w", ErrStudentIDEmpty)
+	}
 
-	if err := d.db.NewSelect().Model(student).Where("student_id = ?", id).Scan(ctx); err != nil {
+	student := new(Student)
+	if err := d.db.NewSelect().Model(student).Where("student_id = ?", studentID).Scan(ctx); err != nil {
 		return nil, fmt.Errorf("failed to get student: %w", err)
 	}
 
@@ -146,7 +159,11 @@ func (d *Database) GetStudent(ctx context.Context, id string) (*spb.Student, err
 
 // UpdateStudent updates an existing student in the database.
 func (d *Database) UpdateStudent(ctx context.Context, student *spb.Student) error {
-	_, err := d.db.NewUpdate().Model(&Student{
+	if student == nil {
+		return fmt.Errorf("%w", ErrStudentNil)
+	}
+
+	res, err := d.db.NewUpdate().Model(&Student{
 		StudentID:   student.GetStudentID(),
 		FirstName:   student.GetFirstName(),
 		LastName:    student.GetSecondName(),
@@ -157,14 +174,26 @@ func (d *Database) UpdateStudent(ctx context.Context, student *spb.Student) erro
 		return fmt.Errorf("failed to update student: %w", err)
 	}
 
+	if num, _ := res.RowsAffected(); num == 0 {
+		return fmt.Errorf("%w", ErrStudentNotFound)
+	}
+
 	return nil
 }
 
 // DeleteStudent removes a student from the database.
 func (d *Database) DeleteStudent(ctx context.Context, id string) error {
-	_, err := d.db.NewDelete().Model((*Student)(nil)).Where("student_id = ?", id).Exec(ctx)
+	if id == "" {
+		return fmt.Errorf("%w", ErrStudentIDEmpty)
+	}
+
+	res, err := d.db.NewDelete().Model((*Student)(nil)).Where("student_id = ?", id).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to delete student: %w", err)
+	}
+
+	if num, _ := res.RowsAffected(); num == 0 {
+		return fmt.Errorf("%w", ErrStudentNotFound)
 	}
 
 	return nil
