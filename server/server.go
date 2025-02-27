@@ -28,8 +28,22 @@ const (
 type StudentsServer struct {
 	ms.BaseServiceServer
 	db *Database
-	// throws unimplemented error
 	spb.UnimplementedStudentsServiceServer
+	Claims ms.Claims
+}
+
+// VerifyToken returns the injected Claims instead of the default.
+func (s *StudentsServer) VerifyToken(ctx context.Context, token string) error {
+	if s.Claims != nil {
+		return nil
+	}
+
+	// Default behavior.
+	if _, err := s.BaseServiceServer.VerifyToken(ctx, token); err != nil {
+		return fmt.Errorf("failed to verify token: %w", err)
+	}
+
+	return nil
 }
 
 // initStudentsMicroserviceServer initializes the StudentsServer.
@@ -55,7 +69,7 @@ func initStudentsMicroserviceServer() (*StudentsServer, error) {
 func (s *StudentsServer) GetStudent(ctx context.Context,
 	req *spb.GetStudentRequest,
 ) (*spb.GetStudentResponse, error) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
@@ -77,7 +91,7 @@ func (s *StudentsServer) GetStudent(ctx context.Context,
 func (s *StudentsServer) CreateStudent(ctx context.Context,
 	req *spb.CreateStudentRequest,
 ) (*spb.CreateStudentResponse, error) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
@@ -97,7 +111,7 @@ func (s *StudentsServer) CreateStudent(ctx context.Context,
 func (s *StudentsServer) UpdateStudent(ctx context.Context,
 	req *spb.UpdateStudentRequest,
 ) (*spb.UpdateStudentResponse, error) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
@@ -117,7 +131,7 @@ func (s *StudentsServer) UpdateStudent(ctx context.Context,
 func (s *StudentsServer) DeleteStudent(ctx context.Context,
 	req *spb.DeleteStudentRequest,
 ) (*spb.DeleteStudentResponse, error) {
-	if _, err := s.VerifyToken(ctx, req.GetToken()); err != nil {
+	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
 		return nil, fmt.Errorf("authentication failed: %w",
 			status.Error(codes.Unauthenticated, err.Error()))
 	}
@@ -129,7 +143,7 @@ func (s *StudentsServer) DeleteStudent(ctx context.Context,
 		return nil, status.Errorf(codes.Internal, "failed to delete student: %v", err)
 	}
 
-	logger.Info("Deleted", "studentId", req.GetStudent().GetStudentID())
+	logger.V(logLevelDebug).Info("Deleted", "studentId", req.GetStudent().GetStudentID())
 
 	return &spb.DeleteStudentResponse{}, nil
 }
@@ -159,7 +173,7 @@ func main() {
 		klog.Fatalf("Failed to listen: %v", err)
 	}
 
-	klog.Info("Starting StudentsServer on port: ", address)
+	klog.V(logLevelDebug).Info("Starting StudentsServer on port: ", address)
 	// create a grpc StudentsServer
 	grpcServer := grpc.NewServer()
 	spb.RegisterStudentsServiceServer(grpcServer, server)
