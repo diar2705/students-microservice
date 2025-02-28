@@ -98,7 +98,7 @@ func (s *StudentsServer) CreateStudent(ctx context.Context,
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received CreateStudent request",
-		"firstName", req.GetStudent().GetFirstName(), "secondName", req.GetStudent().GetSecondName())
+		"firstName", req.GetStudent().GetFirstName(), "lastName", req.GetStudent().GetLastName())
 
 	if err := s.db.AddStudent(ctx, req.GetStudent()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create student: %v", err)
@@ -118,7 +118,7 @@ func (s *StudentsServer) UpdateStudent(ctx context.Context,
 
 	logger := klog.FromContext(ctx)
 	logger.V(logLevelDebug).Info("Received UpdateStudent request",
-		"firstName", req.GetStudent().GetFirstName(), "secondName", req.GetStudent().GetSecondName())
+		"firstName", req.GetStudent().GetFirstName(), "lastName", req.GetStudent().GetLastName())
 
 	if err := s.db.UpdateStudent(ctx, req.GetStudent()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update student: %v", err)

@@ -77,7 +77,7 @@ func createTestStudent() *spb.Student {
 	return &spb.Student{
 		StudentID:   uuid.New().String(),
 		FirstName:   "John",
-		SecondName:  "Doe",
+		LastName:    "Doe",
 		Email:       "john.doe@example.com",
 		PhoneNumber: "1234567890",
 	}
@@ -138,7 +138,8 @@ func TestGetStudentFound(t *testing.T) {
 	assert.Equal(t, student.GetStudentID(), resp.GetStudent().GetStudentID())
 
 	// Cleanup.
-	_, _ = client.DeleteStudent(t.Context(), &spb.DeleteStudentRequest{StudentID: req.GetStudentID(), Token: "test-token"})
+	_, _ = client.DeleteStudent(t.Context(),
+		&spb.DeleteStudentRequest{StudentID: student.GetStudentID(), Token: "test-token"})
 }
 
 func TestGetStudentNotFound(t *testing.T) {

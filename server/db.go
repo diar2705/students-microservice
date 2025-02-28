@@ -126,7 +126,7 @@ func (d *Database) AddStudent(ctx context.Context, student *spb.Student) error {
 	_, err := d.db.NewInsert().Model(&Student{
 		StudentID:   student.GetStudentID(),
 		FirstName:   student.GetFirstName(),
-		LastName:    student.GetSecondName(),
+		LastName:    student.GetLastName(),
 		Email:       student.GetEmail(),
 		PhoneNumber: student.GetPhoneNumber(),
 	}).Exec(ctx)
@@ -151,7 +151,7 @@ func (d *Database) GetStudent(ctx context.Context, studentID string) (*spb.Stude
 	return &spb.Student{
 		StudentID:   student.StudentID,
 		FirstName:   student.FirstName,
-		SecondName:  student.LastName,
+		LastName:    student.LastName,
 		Email:       student.Email,
 		PhoneNumber: student.PhoneNumber,
 	}, nil
@@ -166,7 +166,7 @@ func (d *Database) UpdateStudent(ctx context.Context, student *spb.Student) erro
 	res, err := d.db.NewUpdate().Model(&Student{
 		StudentID:   student.GetStudentID(),
 		FirstName:   student.GetFirstName(),
-		LastName:    student.GetSecondName(),
+		LastName:    student.GetLastName(),
 		Email:       student.GetEmail(),
 		PhoneNumber: student.GetPhoneNumber(),
 	}).Where("student_id = ?", student.GetStudentID()).Exec(ctx)
