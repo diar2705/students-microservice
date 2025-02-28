@@ -60,7 +60,7 @@ message DeleteStudentResponse {
 message Student {
     string studentID = 1;
     string firstName = 2;
-    string secondName = 3;
+    string lastName = 3;
     string email = 4;
     string phoneNumber = 5;
 }
