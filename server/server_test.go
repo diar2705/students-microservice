@@ -62,6 +62,7 @@ func TestMain(m *testing.M) {
 	// Run tests and capture the result.
 	result := m.Run()
 
+	// Print custom summary.
 	if result == 0 {
 		klog.Info("\n\n [Summary] All tests passed.")
 	} else {
@@ -158,7 +159,7 @@ func TestCreateStudentSuccessful(t *testing.T) {
 
 	// Cleanup.
 	_, _ = client.DeleteStudent(t.Context(),
-		&spb.DeleteStudentRequest{StudentID: req.GetStudent().GetStudentID(), Token: "test-token"})
+		&spb.DeleteStudentRequest{StudentID: student.GetStudentID(), Token: "test-token"})
 }
 
 func TestCreateStudentFailureOnDuplicate(t *testing.T) {
@@ -173,7 +174,7 @@ func TestCreateStudentFailureOnDuplicate(t *testing.T) {
 
 	// Cleanup.
 	_, _ = client.DeleteStudent(t.Context(),
-		&spb.DeleteStudentRequest{StudentID: req.GetStudent().GetStudentID(), Token: "test-token"})
+		&spb.DeleteStudentRequest{StudentID: student.GetStudentID(), Token: "test-token"})
 }
 
 func TestUpdateStudentSuccessful(t *testing.T) {
@@ -191,7 +192,7 @@ func TestUpdateStudentSuccessful(t *testing.T) {
 
 	// Cleanup.
 	_, _ = client.DeleteStudent(t.Context(),
-		&spb.DeleteStudentRequest{StudentID: req.GetStudent().GetStudentID(), Token: "test-token"})
+		&spb.DeleteStudentRequest{StudentID: student.GetStudentID(), Token: "test-token"})
 }
 
 func TestUpdateStudentFailureForNonExistentStudent(t *testing.T) {
