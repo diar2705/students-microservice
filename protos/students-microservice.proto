@@ -49,7 +49,7 @@ message UpdateStudentResponse {
 // Request message for deleting a student from the system.
 message DeleteStudentRequest {
     string token = 1;
-    Student student = 2;
+    string studentID = 2;
 }
 
 // Response message after deleting a student.

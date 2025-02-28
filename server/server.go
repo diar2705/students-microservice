@@ -137,13 +137,13 @@ func (s *StudentsServer) DeleteStudent(ctx context.Context,
 	}
 
 	logger := klog.FromContext(ctx)
-	logger.V(logLevelDebug).Info("Received DeleteStudent request", "studentId", req.GetStudent().GetStudentID())
+	logger.V(logLevelDebug).Info("Received DeleteStudent request", "studentId", req.GetStudentID())
 
-	if err := s.db.DeleteStudent(ctx, req.GetStudent().GetStudentID()); err != nil {
+	if err := s.db.DeleteStudent(ctx, req.GetStudentID()); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete student: %v", err)
 	}
 
-	logger.V(logLevelDebug).Info("Deleted", "studentId", req.GetStudent().GetStudentID())
+	logger.V(logLevelDebug).Info("Deleted", "studentId", req.GetStudentID())
 
 	return &spb.DeleteStudentResponse{}, nil
 }
