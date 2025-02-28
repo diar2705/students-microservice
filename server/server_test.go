@@ -137,7 +137,7 @@ func TestGetStudentFound(t *testing.T) {
 	assert.Equal(t, student.GetStudentID(), resp.GetStudent().GetStudentID())
 
 	// Cleanup.
-	_, _ = client.DeleteStudent(t.Context(), &spb.DeleteStudentRequest{Student: student, Token: "test-token"})
+	_, _ = client.DeleteStudent(t.Context(), &spb.DeleteStudentRequest{StudentID: req.GetStudentID(), Token: "test-token"})
 }
 
 func TestGetStudentNotFound(t *testing.T) {
@@ -157,7 +157,8 @@ func TestCreateStudentSuccessful(t *testing.T) {
 	require.NoError(t, err)
 
 	// Cleanup.
-	_, _ = client.DeleteStudent(t.Context(), &spb.DeleteStudentRequest{Student: student, Token: "test-token"})
+	_, _ = client.DeleteStudent(t.Context(),
+		&spb.DeleteStudentRequest{StudentID: req.GetStudent().GetStudentID(), Token: "test-token"})
 }
 
 func TestCreateStudentFailureOnDuplicate(t *testing.T) {
@@ -171,7 +172,8 @@ func TestCreateStudentFailureOnDuplicate(t *testing.T) {
 	require.Error(t, err)
 
 	// Cleanup.
-	_, _ = client.DeleteStudent(t.Context(), &spb.DeleteStudentRequest{Student: student, Token: "test-token"})
+	_, _ = client.DeleteStudent(t.Context(),
+		&spb.DeleteStudentRequest{StudentID: req.GetStudent().GetStudentID(), Token: "test-token"})
 }
 
 func TestUpdateStudentSuccessful(t *testing.T) {
@@ -188,7 +190,8 @@ func TestUpdateStudentSuccessful(t *testing.T) {
 	require.NoError(t, err)
 
 	// Cleanup.
-	_, _ = client.DeleteStudent(t.Context(), &spb.DeleteStudentRequest{Student: student, Token: "test-token"})
+	_, _ = client.DeleteStudent(t.Context(),
+		&spb.DeleteStudentRequest{StudentID: req.GetStudent().GetStudentID(), Token: "test-token"})
 }
 
 func TestUpdateStudentFailureForNonExistentStudent(t *testing.T) {
@@ -207,14 +210,14 @@ func TestDeleteStudentSuccessful(t *testing.T) {
 	_, err := client.CreateStudent(t.Context(), &spb.CreateStudentRequest{Student: student, Token: "test-token"})
 	require.NoError(t, err)
 
-	req := &spb.DeleteStudentRequest{Student: student, Token: "test-token"}
+	req := &spb.DeleteStudentRequest{StudentID: student.GetStudentID(), Token: "test-token"}
 	_, err = client.DeleteStudent(t.Context(), req)
 	assert.NoError(t, err)
 }
 
 func TestDeleteStudentFailureForNonExistentStudent(t *testing.T) {
 	client := setupClient(t)
-	req := &spb.DeleteStudentRequest{Student: &spb.Student{StudentID: "non-existent-id"}, Token: "test-token"}
+	req := &spb.DeleteStudentRequest{StudentID: "non-existent-id", Token: "test-token"}
 
 	_, err := client.DeleteStudent(t.Context(), req)
 	assert.Error(t, err)
