@@ -155,8 +155,9 @@ func TestCreateStudentSuccessful(t *testing.T) {
 	student := createTestStudent()
 	req := &spb.CreateStudentRequest{Student: student, Token: "test-token"}
 
-	_, err := client.CreateStudent(t.Context(), req)
+	resp, err := client.CreateStudent(t.Context(), req)
 	require.NoError(t, err)
+	assert.Equal(t, resp.GetStudent().GetStudentID(), student.GetStudentID())
 
 	// Cleanup.
 	_, _ = client.DeleteStudent(t.Context(),
@@ -188,8 +189,9 @@ func TestUpdateStudentSuccessful(t *testing.T) {
 	student.FirstName = "UpdatedName"
 	req := &spb.UpdateStudentRequest{Student: student, Token: "test-token"}
 
-	_, err = client.UpdateStudent(t.Context(), req)
+	resp, err := client.UpdateStudent(t.Context(), req)
 	require.NoError(t, err)
+	assert.Equal(t, student.GetFirstName(), resp.GetStudent().GetFirstName())
 
 	// Cleanup.
 	_, _ = client.DeleteStudent(t.Context(),

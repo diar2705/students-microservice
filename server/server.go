@@ -82,8 +82,42 @@ func (s *StudentsServer) GetStudent(ctx context.Context,
 		return nil, status.Errorf(codes.NotFound, "student not found: %v", err)
 	}
 
+	spbStudent := &spb.Student{
+		StudentID:   student.StudentID,
+		FirstName:   student.FirstName,
+		LastName:    student.LastName,
+		Email:       student.Email,
+		PhoneNumber: student.PhoneNumber,
+	}
+
 	return &spb.GetStudentResponse{
-		Student: student,
+		Student: spbStudent,
+	}, nil
+}
+
+// processStudent processes the student creation or update request.
+func (s *StudentsServer) processStudent(ctx context.Context, token string, student *spb.Student,
+	action func(context.Context, *spb.Student) (*Student, error),
+) (*spb.Student, error) {
+	if err := s.VerifyToken(ctx, token); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w", status.Error(codes.Unauthenticated, err.Error()))
+	}
+
+	logger := klog.FromContext(ctx)
+	logger.V(logLevelDebug).Info("Processing student request",
+		"firstName", student.GetFirstName(), "lastName", student.GetLastName())
+
+	processedStudent, err := action(ctx, student)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to process student: %v", err)
+	}
+
+	return &spb.Student{
+		StudentID:   processedStudent.StudentID,
+		FirstName:   processedStudent.FirstName,
+		LastName:    processedStudent.LastName,
+		Email:       processedStudent.Email,
+		PhoneNumber: processedStudent.PhoneNumber,
 	}, nil
 }
 
@@ -91,40 +125,24 @@ func (s *StudentsServer) GetStudent(ctx context.Context,
 func (s *StudentsServer) CreateStudent(ctx context.Context,
 	req *spb.CreateStudentRequest,
 ) (*spb.CreateStudentResponse, error) {
-	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
+	spbStudent, err := s.processStudent(ctx, req.GetToken(), req.GetStudent(), s.db.AddStudent)
+	if err != nil {
+		return nil, err
 	}
 
-	logger := klog.FromContext(ctx)
-	logger.V(logLevelDebug).Info("Received CreateStudent request",
-		"firstName", req.GetStudent().GetFirstName(), "lastName", req.GetStudent().GetLastName())
-
-	if err := s.db.AddStudent(ctx, req.GetStudent()); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create student: %v", err)
-	}
-
-	return &spb.CreateStudentResponse{}, nil
+	return &spb.CreateStudentResponse{Student: spbStudent}, nil
 }
 
 // UpdateStudent updates the given Student and returns them after the update.
 func (s *StudentsServer) UpdateStudent(ctx context.Context,
 	req *spb.UpdateStudentRequest,
 ) (*spb.UpdateStudentResponse, error) {
-	if err := s.VerifyToken(ctx, req.GetToken()); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w",
-			status.Error(codes.Unauthenticated, err.Error()))
+	spbStudent, err := s.processStudent(ctx, req.GetToken(), req.GetStudent(), s.db.UpdateStudent)
+	if err != nil {
+		return nil, err
 	}
 
-	logger := klog.FromContext(ctx)
-	logger.V(logLevelDebug).Info("Received UpdateStudent request",
-		"firstName", req.GetStudent().GetFirstName(), "lastName", req.GetStudent().GetLastName())
-
-	if err := s.db.UpdateStudent(ctx, req.GetStudent()); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update student: %v", err)
-	}
-
-	return &spb.UpdateStudentResponse{}, nil
+	return &spb.UpdateStudentResponse{Student: spbStudent}, nil
 }
 
 // DeleteStudent deletes the Student from the system.

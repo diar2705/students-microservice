@@ -118,27 +118,29 @@ type Student struct {
 }
 
 // AddStudent adds a new student to the database.
-func (d *Database) AddStudent(ctx context.Context, student *spb.Student) error {
+func (d *Database) AddStudent(ctx context.Context, student *spb.Student) (*Student, error) {
 	if student == nil {
-		return fmt.Errorf("%w", ErrStudentNil)
+		return nil, fmt.Errorf("%w", ErrStudentNil)
 	}
 
-	_, err := d.db.NewInsert().Model(&Student{
+	newStudent := &Student{
 		StudentID:   student.GetStudentID(),
 		FirstName:   student.GetFirstName(),
 		LastName:    student.GetLastName(),
 		Email:       student.GetEmail(),
 		PhoneNumber: student.GetPhoneNumber(),
-	}).Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to add student: %w", err)
 	}
 
-	return nil
+	_, err := d.db.NewInsert().Model(newStudent).Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add student: %w", err)
+	}
+
+	return newStudent, nil
 }
 
 // GetStudent retrieves a student by ID from the database.
-func (d *Database) GetStudent(ctx context.Context, studentID string) (*spb.Student, error) {
+func (d *Database) GetStudent(ctx context.Context, studentID string) (*Student, error) {
 	if studentID == "" {
 		return nil, fmt.Errorf("%w", ErrStudentIDEmpty)
 	}
@@ -148,37 +150,42 @@ func (d *Database) GetStudent(ctx context.Context, studentID string) (*spb.Stude
 		return nil, fmt.Errorf("failed to get student: %w", err)
 	}
 
-	return &spb.Student{
-		StudentID:   student.StudentID,
-		FirstName:   student.FirstName,
-		LastName:    student.LastName,
-		Email:       student.Email,
-		PhoneNumber: student.PhoneNumber,
-	}, nil
+	return student, nil
 }
 
 // UpdateStudent updates an existing student in the database.
-func (d *Database) UpdateStudent(ctx context.Context, student *spb.Student) error {
+func (d *Database) UpdateStudent(ctx context.Context, student *spb.Student) (*Student, error) {
 	if student == nil {
-		return fmt.Errorf("%w", ErrStudentNil)
+		return nil, fmt.Errorf("%w", ErrStudentNil)
 	}
 
-	res, err := d.db.NewUpdate().Model(&Student{
-		StudentID:   student.GetStudentID(),
-		FirstName:   student.GetFirstName(),
-		LastName:    student.GetLastName(),
-		Email:       student.GetEmail(),
-		PhoneNumber: student.GetPhoneNumber(),
-	}).Where("student_id = ?", student.GetStudentID()).Exec(ctx)
+	if student.GetStudentID() == "" {
+		return nil, fmt.Errorf("%w", ErrStudentIDEmpty)
+	}
+
+	// get the existing student.
+	existingStudent, err := d.GetStudent(ctx, student.GetStudentID())
 	if err != nil {
-		return fmt.Errorf("failed to update student: %w", err)
+		return nil, fmt.Errorf("failed to get student: %w", err)
 	}
 
-	if num, _ := res.RowsAffected(); num == 0 {
-		return fmt.Errorf("%w", ErrStudentNotFound)
+	// Update the fields.
+	updateField := func(field *string, newValue string) {
+		if newValue != "" {
+			*field = newValue
+		}
 	}
 
-	return nil
+	updateField(&existingStudent.FirstName, student.GetFirstName())
+	updateField(&existingStudent.LastName, student.GetLastName())
+	updateField(&existingStudent.Email, student.GetEmail())
+	updateField(&existingStudent.PhoneNumber, student.GetPhoneNumber())
+
+	if _, err := d.db.NewUpdate().Model(existingStudent).WherePK().Exec(ctx); err != nil {
+		return nil, fmt.Errorf("failed to update grade: %w", err)
+	}
+
+	return existingStudent, nil
 }
 
 // DeleteStudent removes a student from the database.
