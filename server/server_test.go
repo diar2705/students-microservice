@@ -94,7 +94,7 @@ func startTestServer() (*grpc.Server, net.Listener, *TestStudentsServer, error) 
 	grpcServer := grpc.NewServer()
 	spb.RegisterStudentsServiceServer(grpcServer, testServer)
 
-	listener, err := net.Listen(connectionProtocol, os.Getenv("GRPC_PORT"))
+	listener, err := net.Listen(connectionProtocol, "localhost:"+os.Getenv("GRPC_PORT"))
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to listen on port %s: %w", os.Getenv("GRPC_PORT"), err)
 	}
