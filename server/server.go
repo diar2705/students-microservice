@@ -79,7 +79,8 @@ func (s *StudentsServer) GetStudent(ctx context.Context,
 
 	student, err := s.db.GetStudent(ctx, req.GetStudentID())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "student not found: %v", err)
+		return nil, fmt.Errorf("student not found: %w",
+			status.Error(codes.NotFound, err.Error()))
 	}
 
 	spbStudent := &spb.Student{
@@ -109,7 +110,7 @@ func (s *StudentsServer) processStudent(ctx context.Context, token string, stude
 
 	processedStudent, err := action(ctx, student)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to process student: %v", err)
+		return nil, fmt.Errorf("failed to process student: %w", status.Error(codes.Internal, err.Error()))
 	}
 
 	return &spb.Student{
@@ -158,7 +159,7 @@ func (s *StudentsServer) DeleteStudent(ctx context.Context,
 	logger.V(logLevelDebug).Info("Received DeleteStudent request", "studentId", req.GetStudentID())
 
 	if err := s.db.DeleteStudent(ctx, req.GetStudentID()); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete student: %v", err)
+		return nil, fmt.Errorf("failed to delete student: %w", status.Error(codes.Internal, err.Error()))
 	}
 
 	logger.V(logLevelDebug).Info("Deleted", "studentId", req.GetStudentID())
