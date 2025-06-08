@@ -27,7 +27,7 @@ jobs:
       run: go test -v ./...
       env:
         GRPC_PORT: "50051"
-        # Add any other necessary environment variables here
+        AUTH_ISSUER: http://auth.BetterGR.org
 
     - name: Run go vet
       run: go vet ./...

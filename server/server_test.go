@@ -92,6 +92,7 @@ func startTestServer() (*grpc.Server, net.Listener, *TestStudentsServer, error) 
 	if port == "" {
 		port = "50051" // Default port for tests if not specified
 	}
+
 	listener, err := net.Listen(connectionProtocol, "localhost:"+port)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to listen on port %s: %w", port, err)

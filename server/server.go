@@ -187,8 +187,10 @@ func main() {
 	port := os.Getenv("GRPC_PORT")
 	if port == "" {
 		port = "50051" // Default port if not specified
+
 		klog.Warning("GRPC_PORT not set, using default port 50051")
 	}
+
 	address := "localhost:" + port
 
 	lis, err := net.Listen(connectionProtocol, address)
