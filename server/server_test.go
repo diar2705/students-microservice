@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
-	"strings"
 	"testing"
 
 	spb "github.com/BetterGR/students-microservice/protos"
 	ms "github.com/TekClinic/MicroService-Lib"
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -39,22 +38,17 @@ type TestStudentsServer struct {
 }
 
 func TestMain(m *testing.M) {
-	// Load .env file.
-	cmd := exec.Command("cat", "../.env")
-
-	output, err := cmd.Output()
-	if err != nil {
-		panic("Error reading .env file: " + err.Error())
-	}
-
-	// Set environment variables.
-	for _, line := range strings.Split(string(output), "\n") {
-		if line = strings.TrimSpace(line); line != "" && !strings.HasPrefix(line, "#") {
-			parts := strings.SplitN(line, "=", 2)
-			if len(parts) == 2 {
-				// Remove quotes from the value if they exist.
-				value := strings.Trim(parts[1], `"'`)
-				os.Setenv(parts[0], value)
+	// Check if crucial environment variables exist (like GRPC_PORT)
+	// If not, try to load from .env file as fallback
+	if os.Getenv("GRPC_PORT") == "" {
+		// Environment variables not set, try .env file as fallback
+		if err := godotenv.Load("../.env"); err != nil {
+			// Set default values for CI environments
+			if os.Getenv("CI") != "" {
+				// We're in a CI environment, set default values
+				os.Setenv("GRPC_PORT", "50051") // Default port for testing
+			} else {
+				klog.Warning("Warning: No .env file found and no environment variables set")
 			}
 		}
 	}
@@ -94,9 +88,13 @@ func startTestServer() (*grpc.Server, net.Listener, *TestStudentsServer, error) 
 	grpcServer := grpc.NewServer()
 	spb.RegisterStudentsServiceServer(grpcServer, testServer)
 
-	listener, err := net.Listen(connectionProtocol, "localhost:"+os.Getenv("GRPC_PORT"))
+	port := os.Getenv("GRPC_PORT")
+	if port == "" {
+		port = "50051" // Default port for tests if not specified
+	}
+	listener, err := net.Listen(connectionProtocol, "localhost:"+port)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to listen on port %s: %w", os.Getenv("GRPC_PORT"), err)
+		return nil, nil, nil, fmt.Errorf("failed to listen on port %s: %w", port, err)
 	}
 
 	go func() {

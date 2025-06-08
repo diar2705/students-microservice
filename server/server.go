@@ -174,7 +174,7 @@ func main() {
 	flag.Parse()
 
 	if err := godotenv.Load(); err != nil {
-	    klog.Warning("Warning: No .env file loaded, proceeding with environment variables only")
+		klog.Warning("Warning: No .env file loaded, proceeding with environment variables only")
 	}
 
 	// init the StudentsServer
@@ -184,7 +184,12 @@ func main() {
 	}
 
 	// create a listener on port 'address'
-	address := "localhost:" + os.Getenv("GRPC_PORT")
+	port := os.Getenv("GRPC_PORT")
+	if port == "" {
+		port = "50051" // Default port if not specified
+		klog.Warning("GRPC_PORT not set, using default port 50051")
+	}
+	address := "localhost:" + port
 
 	lis, err := net.Listen(connectionProtocol, address)
 	if err != nil {

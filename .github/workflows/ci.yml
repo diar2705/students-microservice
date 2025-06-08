@@ -25,6 +25,9 @@ jobs:
 
     - name: Run tests
       run: go test -v ./...
+      env:
+        GRPC_PORT: "50051"
+        # Add any other necessary environment variables here
 
     - name: Run go vet
       run: go vet ./...
