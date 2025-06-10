@@ -45,8 +45,11 @@ jobs:
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v3
       with:
-        version: latest
+        version: v1.64.8
         args: --config=.golangci.yaml
+        skip-pkg-cache: false
+        skip-build-cache: false
+        install-mode: binary
 
   build:
     runs-on: ubuntu-latest
