@@ -55,12 +55,6 @@ func createDatabaseIfNotExists() {
 		}
 	}
 
-	// Make sure DSN is valid
-	if dsn[0:8] != "postgres:" {
-		klog.Errorf("Invalid DSN format: %s", dsn)
-		return
-	}
-
 	connector := pgdriver.NewConnector(pgdriver.WithDSN(dsn))
 
 	sqldb := sql.OpenDB(connector)
