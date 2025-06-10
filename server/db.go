@@ -24,6 +24,7 @@ var (
 	ErrStudentNil      = errors.New("student is nil")
 	ErrStudentIDEmpty  = errors.New("student ID is empty")
 	ErrStudentNotFound = errors.New("student not found")
+	ErrDsnNotSet       = errors.New("neither DSN_TEST nor DSN environment variables are set")
 )
 
 // InitializeDatabase ensures that the database exists and initializes the schema.
@@ -61,9 +62,11 @@ func createDatabaseIfNotExists() {
 	defer sqldb.Close()
 
 	ctx := context.Background()
+
 	dbName := os.Getenv("DP_NAME")
 	if dbName == "" {
 		klog.Warning("DP_NAME environment variable is not set, using 'students' as default")
+
 		dbName = "students"
 	}
 
@@ -95,7 +98,7 @@ func ConnectDB() (*Database, error) {
 		// If not found, use the regular DSN
 		dsn = os.Getenv("DSN")
 		if dsn == "" {
-			return nil, fmt.Errorf("neither DSN_TEST nor DSN environment variables are set")
+			return nil, fmt.Errorf("%w", ErrDsnNotSet)
 		}
 	}
 

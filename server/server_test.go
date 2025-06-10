@@ -47,7 +47,6 @@ func TestMain(m *testing.M) {
 			if os.Getenv("CI") != "" {
 				// We're in a CI environment, set default values
 				os.Setenv("GRPC_PORT", "50051") // Default port for testing
-				// Let startTestServer handle DSN setup
 			} else {
 				klog.Warning("Warning: No .env file found and no environment variables set")
 			}
