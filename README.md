@@ -30,6 +30,17 @@ DSN=postgres://postgres:bettergr2425@localhost:5432/bettergr?sslmode=disable
 DB_NAME=bettergr
 ```
 
+#### Testing Environment Variables
+
+For test environments, you can set a separate database connection string using:
+
+```.env
+DSN_TEST=postgres://postgres:password@localhost:5432/test_db?sslmode=disable
+DP_NAME=students_test
+```
+
+The service is designed to look for `DSN_TEST` first and use it for tests if available. This allows you to use a separate test database while keeping your production database (`DSN`) untouched.
+
 ### 4. Configure MicroService Library
 
 This repository depends on the TekClinic/MicroService-Lib library for authentication and environment variable management. Proper configuration of the required environment variables from TekClinic/MicroService-Lib is essential. Refer to its documentation for proper setup.
@@ -45,11 +56,28 @@ make run
 
 ### 6. Testing
 
-To run unit tests:
+#### Local Testing
+
+To run unit tests locally:
 
 ```bash
 make test
 ```
+
+Make sure you have PostgreSQL running locally. You can use either:
+
+- The regular `DSN` environment variable
+- A test-specific `DSN_TEST` environment variable (which will take precedence)
+
+#### CI Testing
+
+This repository is configured to run tests automatically in GitHub Actions. The workflow:
+
+1. Sets up Go
+2. Installs a PostgreSQL instance
+3. Runs the tests with the appropriate environment variables, using a dedicated `DSN_TEST` variable for the test database connection
+
+The CI configuration can be found in `.github/workflows/ci.yml`.
 
 ### 7. Makefile Help
 

@@ -23,11 +23,21 @@ jobs:
     - name: Download dependencies
       run: go mod download
 
+    - name: Setup PostgreSQL
+      uses: ikalnytskyi/action-setup-postgres@v4
+      with:
+        username: postgres
+        password: postgres
+        database: students_test
+        port: 5432
+      
     - name: Run tests
       run: go test -v ./...
       env:
         GRPC_PORT: "50051"
         AUTH_ISSUER: http://auth.BetterGR.org
+        DSN_TEST: "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+        DP_NAME: "students_test"
 
     - name: Run go vet
       run: go vet ./...

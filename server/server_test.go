@@ -40,13 +40,14 @@ type TestStudentsServer struct {
 func TestMain(m *testing.M) {
 	// Check if crucial environment variables exist (like GRPC_PORT)
 	// If not, try to load from .env file as fallback
-	if os.Getenv("GRPC_PORT") == "" {
+	if os.Getenv("GRPC_PORT") == "" || (os.Getenv("DSN") == "" && os.Getenv("DSN_TEST") == "") {
 		// Environment variables not set, try .env file as fallback
 		if err := godotenv.Load("../.env"); err != nil {
 			// Set default values for CI environments
 			if os.Getenv("CI") != "" {
 				// We're in a CI environment, set default values
 				os.Setenv("GRPC_PORT", "50051") // Default port for testing
+				// Let startTestServer handle DSN setup
 			} else {
 				klog.Warning("Warning: No .env file found and no environment variables set")
 			}
@@ -78,6 +79,16 @@ func createTestStudent() *spb.Student {
 }
 
 func startTestServer() (*grpc.Server, net.Listener, *TestStudentsServer, error) {
+	// Set up test-specific database connection if needed
+	if os.Getenv("DSN_TEST") == "" && os.Getenv("CI") != "" {
+		// Default test database connection for CI environment
+		os.Setenv("DSN_TEST", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	}
+
+	if os.Getenv("DP_NAME") == "" {
+		os.Setenv("DP_NAME", "students_test")
+	}
+
 	server, err := initStudentsMicroserviceServer()
 	if err != nil {
 		return nil, nil, nil, err

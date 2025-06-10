@@ -44,7 +44,23 @@ func InitializeDatabase() (*Database, error) {
 
 // createDatabaseIfNotExists ensures the database exists.
 func createDatabaseIfNotExists() {
-	dsn := os.Getenv("DSN")
+	// First check for test-specific DSN
+	dsn := os.Getenv("DSN_TEST")
+	if dsn == "" {
+		// If not found, use the regular DSN
+		dsn = os.Getenv("DSN")
+		if dsn == "" {
+			klog.Fatalf("neither DSN_TEST nor DSN environment variables are set")
+			return
+		}
+	}
+
+	// Make sure DSN is valid
+	if dsn[0:8] != "postgres:" {
+		klog.Errorf("Invalid DSN format: %s", dsn)
+		return
+	}
+
 	connector := pgdriver.NewConnector(pgdriver.WithDSN(dsn))
 
 	sqldb := sql.OpenDB(connector)
@@ -52,6 +68,11 @@ func createDatabaseIfNotExists() {
 
 	ctx := context.Background()
 	dbName := os.Getenv("DP_NAME")
+	if dbName == "" {
+		klog.Warning("DP_NAME environment variable is not set, using 'students' as default")
+		dbName = "students"
+	}
+
 	query := "SELECT 1 FROM pg_database WHERE datname = $1;"
 
 	var exists int
@@ -74,7 +95,16 @@ func createDatabaseIfNotExists() {
 
 // ConnectDB connects to the database.
 func ConnectDB() (*Database, error) {
-	dsn := os.Getenv("DSN")
+	// First check for test-specific DSN
+	dsn := os.Getenv("DSN_TEST")
+	if dsn == "" {
+		// If not found, use the regular DSN
+		dsn = os.Getenv("DSN")
+		if dsn == "" {
+			return nil, fmt.Errorf("neither DSN_TEST nor DSN environment variables are set")
+		}
+	}
+
 	connector := pgdriver.NewConnector(pgdriver.WithDSN(dsn))
 	sqldb := sql.OpenDB(connector)
 	database := bun.NewDB(sqldb, pgdialect.New())
